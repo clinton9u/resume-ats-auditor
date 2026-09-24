@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Resume ATS Audit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1C2430; --ink-soft:#4A5568;
+    --paper:#F0F1ED; --paper-raised:#FFFFFF;
+    --line:#D8D9D3;
+    --good:#3F7D5C; --good-bg:#E7F1EA;
+    --warn:#C97B2E; --warn-bg:#FBEEDF;
+    --bad:#B23A3A; --bad-bg:#F7E7E6;
+    box-sizing:border-box;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ink:#EDEEEA; --ink-soft:#A9AFBA;
+      --paper:#181C22; --paper-raised:#20252C;
+      --line:#333A44;
+      --good-bg:#1D2C24; --warn-bg:#2E2418; --bad-bg:#2E1E1D;
+    }
+  }
+  :root[data-theme="dark"]{
+    --ink:#EDEEEA; --ink-soft:#A9AFBA;
+    --paper:#181C22; --paper-raised:#20252C;
+    --line:#333A44;
+    --good-bg:#1D2C24; --warn-bg:#2E2418; --bad-bg:#2E1E1D;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-padding-top:env(safe-area-inset-top,0px); height:100%;}
+  body{
+    margin:0; min-height:100%; background:var(--paper); color:var(--ink);
+    font-family:'Inter',system-ui,-apple-system,sans-serif;
+    line-height:1.5;
+  }
+  .wrap{max-width:840px; margin:0 auto; padding:32px 20px 80px;}
+  header{margin-bottom:36px;}
+  header .kicker{color:var(--ink-soft); font-size:14px; margin:0 0 6px;}
+  h1{
+    font-family:'Source Serif 4',Georgia,serif; font-weight:600;
+    font-size:clamp(28px,5vw,38px); margin:0 0 10px; letter-spacing:-0.01em;
+  }
+  header p{color:var(--ink-soft); font-size:16px; max-width:60ch; margin:0;}
+
+  .panel{
+    background:var(--paper-raised); border:1px solid var(--line);
+    border-radius:10px; padding:22px; margin-bottom:20px;
+  }
+  label{display:block; font-weight:600; font-size:14px; margin-bottom:8px;}
+  label .opt{font-weight:400; color:var(--ink-soft);}
+  textarea{
+    width:100%; border:1px solid var(--line); border-radius:8px;
+    background:var(--paper); color:var(--ink); font-family:inherit;
+    font-size:14px; padding:12px; resize:vertical; min-height:180px;
+  }
+  textarea:focus{outline:2px solid var(--good); outline-offset:1px;}
+  .upload-row{display:flex; align-items:center; gap:10px; margin-bottom:8px;}
+  .upload-btn{
+    font-size:13px; font-weight:600; padding:7px 12px; border-radius:7px;
+    border:1px solid var(--line); background:var(--paper); cursor:pointer; flex:none;
+  }
+  .upload-btn:hover{background:var(--paper-raised);}
+  .upload-status{font-size:12.5px; color:var(--ink-soft);}
+
+  .row{display:grid; grid-template-columns:1fr; gap:16px;}
+  @media(min-width:680px){ .row{grid-template-columns:1fr 1fr;} }
+
+  .actions{display:flex; gap:12px; align-items:center; margin-top:16px; flex-wrap:wrap;}
+  button{
+    font-family:inherit; font-size:15px; font-weight:600; cursor:pointer;
+    border-radius:8px; padding:12px 20px; border:1px solid transparent;
+  }
+  button:focus-visible{outline:2px solid var(--good); outline-offset:2px;}
+  .btn-primary{background:var(--ink); color:var(--paper);}
+  .btn-primary:hover{opacity:.9;}
+  .btn-ghost{background:transparent; color:var(--ink); border-color:var(--line);}
+  .btn-ghost:hover{background:var(--paper);}
+  .hint{color:var(--ink-soft); font-size:13px;}
+
+  #report{display:none;}
+  .score-card{
+    display:flex; align-items:center; gap:22px; padding:26px;
+    background:var(--paper-raised); border:1px solid var(--line); border-radius:10px;
+    margin-bottom:20px;
+  }
+  .score-ring{position:relative; width:96px; height:96px; flex:none;}
+  .score-ring svg{transform:rotate(-90deg); width:100%; height:100%;}
+  .score-ring .num{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-family:'Source Serif 4',serif; font-size:26px; font-weight:600;
+  }
+  .score-text .band{font-family:'Source Serif 4',serif; font-size:22px; font-weight:600; margin:0 0 4px;}
+  .score-text p{margin:0; color:var(--ink-soft); font-size:14px;}
+
+  .stage-block{display:none;}
+  .stage-block.show{display:block; animation:fadeUp .5s ease;}
+
+  @keyframes fadeUp{
+    from{opacity:0; transform:translateY(6px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+  .issue, .kw{opacity:0; animation:fadeUp .4s ease forwards;}
+  #scoreArc{transition:stroke-dashoffset .9s ease, stroke .4s ease;}
+  @media (prefers-reduced-motion: reduce){
+    .issue, .kw{animation:none; opacity:1;}
+    .stage-block.show{animation:none;}
+    #scoreArc{transition:none;}
+  }
+
+  .section-title{
+    font-family:'Source Serif 4',serif; font-size:18px; font-weight:600;
+    margin:28px 0 12px;
+  }
+  .issue{
+    display:flex; gap:12px; padding:14px 16px; border-radius:8px;
+    border:1px solid var(--line); margin-bottom:10px; align-items:flex-start;
+  }
+  .issue .tag{
+    flex:none; font-size:12px; font-weight:600; padding:3px 8px; border-radius:99px;
+    margin-top:2px;
+  }
+  .tag.good{background:var(--good-bg); color:var(--good);}
+  .tag.warn{background:var(--warn-bg); color:var(--warn);}
+  .tag.bad{background:var(--bad-bg); color:var(--bad);}
+  .issue .body strong{display:block; font-size:14.5px; margin-bottom:3px;}
+  .issue .body span{font-size:13.5px; color:var(--ink-soft);}
+
+  .kw-grid{display:flex; flex-wrap:wrap; gap:8px; margin-top:6px;}
+  .kw{
+    font-size:13px; padding:5px 10px; border-radius:99px; border:1px solid var(--line);
+  }
+  .kw.hit{background:var(--good-bg); color:var(--good); border-color:transparent;}
+  .kw.miss{background:var(--bad-bg); color:var(--bad); border-color:transparent;}
+
+  footer{margin-top:40px; color:var(--ink-soft); font-size:12.5px; border-top:1px solid var(--line); padding-top:16px;}
+
+  .upsell{
+    display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:18px;
+    border-color:var(--ink);
+  }
+  .upsell-price{font-family:'Source Serif 4',serif; font-size:26px; margin:0 0 6px;}
+  .upsell-price span{font-size:14px; font-weight:400; color:var(--ink-soft);}
+  .upsell-copy p:last-child{margin:0; color:var(--ink-soft); font-size:14px; max-width:46ch;}
+  button[disabled]{opacity:.6; cursor:default;}
+  .rewrite-card{border:1px solid var(--line); border-radius:8px; padding:14px 16px; margin-bottom:12px;}
+  .rw-label{display:block; font-size:11px; font-weight:600; color:var(--ink-soft); margin-bottom:3px;}
+  .rw-before,.rw-after{font-size:14px; padding:8px 10px; border-radius:6px; margin-bottom:8px;}
+  .rw-before{background:var(--bad-bg);}
+  .rw-after{background:var(--good-bg); margin-bottom:6px;}
+  .rw-reason{font-size:13px; color:var(--ink-soft); margin:0;}
+
+  @media print{
+    body{background:#fff; color:#000;}
+    .stage-block{display:block !important; animation:none !important;}
+    .panel, .actions, header p, footer{display:none !important;}
+    #report{display:block !important;}
+    .score-card, .issue{break-inside:avoid;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="kicker">Resume · ATS Compatibility</p>
+    <h1>Will your resume survive the robot before it reaches a human?</h1>
+    <p>Paste your resume text or upload a PDF/DOCX below. You'll get a plain-language audit of what's likely to trip up applicant tracking systems — and what to fix first.</p>
+  </header>
+
+  <div class="panel">
+    <div class="row">
+      <div>
+        <label for="resume">Your resume <span class="opt">(paste text or upload a file)</span></label>
+        <div class="upload-row">
+          <label class="upload-btn" for="resumeFile">Upload file
+            <input type="file" id="resumeFile" accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" hidden>
+          </label>
+          <span class="upload-status" id="resumeFileStatus">PDF, DOCX or TXT</span>
+        </div>
+        <textarea id="resume" placeholder="Paste the full text of your resume here, or upload a file above..."></textarea>
+      </div>
+      <div>
+        <label for="jd">Job description <span class="opt">(optional, paste text or upload a file)</span></label>
+        <div class="upload-row">
+          <label class="upload-btn" for="jdFile">Upload file
+            <input type="file" id="jdFile" accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" hidden>
+          </label>
+          <span class="upload-status" id="jdFileStatus">PDF, DOCX or TXT</span>
+        </div>
+        <textarea id="jd" placeholder="Paste the job listing you're applying to, or upload a file above..."></textarea>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn-primary" id="runBtn">Run audit</button>
+      <span class="hint" id="statusHint">Nothing leaves your browser — this runs entirely on your device.</span>
+    </div>
+  </div>
+
+  <div id="report">
+    <p id="auditStatus" class="hint" style="min-height:18px; margin:0 0 12px;"></p>
+    <div class="score-card">
+      <div class="score-ring">
+        <svg viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="42" fill="none" stroke="var(--line)" stroke-width="10"/>
+          <circle id="scoreArc" cx="50" cy="50" r="42" fill="none" stroke="var(--good)" stroke-width="10" stroke-linecap="round" stroke-dasharray="264" stroke-dashoffset="264"/>
+        </svg>
+        <div class="num" id="scoreNum">0</div>
+      </div>
+      <div class="score-text">
+        <p class="band" id="scoreBand">—</p>
+        <p id="scoreSummary">Run the audit to see your results.</p>
+      </div>
+    </div>
+
+    <div class="stage-block" id="stageStructure">
+      <div class="section-title">Formatting &amp; structure</div>
+      <div id="structureIssues"></div>
+    </div>
+
+    <div class="stage-block" id="stageKeywords">
+      <div class="section-title">Keyword match</div>
+      <div class="panel" id="keywordPanel">
+        <p class="hint" id="kwHint" style="margin:0 0 8px;">Add a job description above to check keyword overlap.</p>
+        <div class="kw-grid" id="kwGrid"></div>
+      </div>
+    </div>
+
+    <div class="stage-block" id="stageWording">
+      <div class="section-title">Wording &amp; readability</div>
+      <div id="wordingIssues"></div>
+    </div>
+
+    <div class="stage-block" id="stageUpsell">
+      <div class="section-title">Get it rewritten for you</div>
+      <div class="panel upsell">
+        <div class="upsell-copy">
+          <p class="upsell-price">$19 <span>one-time</span></p>
+          <p>Claude rewrites your weakest bullets, tightens your summary line, and works in real keywords from the job description — using your actual resume, not a template.</p>
+        </div>
+        <button class="btn-primary" id="rewriteBtn">Generate my rewrite</button>
+      </div>
+      <p id="rewriteStatus" class="hint"></p>
+      <div id="rewriteResults"></div>
+    </div>
+
+    <div class="stage-block actions" id="stageActions">
+      <button class="btn-ghost" id="downloadBtn">Download PDF report</button>
+      <button class="btn-ghost" id="resetBtn">Start over</button>
+    </div>
+  </div>
+
+  <footer>
+    This tool gives general ATS-compatibility guidance based on common parsing patterns. It cannot see your resume's original visual layout (columns, tables, images) if those were removed when you pasted plain text — check those separately.
+  </footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.16/mammoth.browser.min.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const STOPWORDS = new Set(['the','and','a','to','of','in','for','on','with','is','are','as','at','by','an','be','or','that','this','from','will','you','your','we','our','it','their','they','have','has','job','role','team','work','experience','years','including','including,','ability','skills','strong']);
+
+let sample = null;
+let lastAuditResume = '', lastAuditIssues = [], lastAuditJD = '';
+(async () => {
+  if (window.claude && window.claude.use) {
+    try { sample = await window.claude.use('sample'); } catch(e) { sample = null; }
+  }
+})();
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function copyForCode(code){
+  const map = {
+    not_granted: "AI rewrites aren't enabled for this view.",
+    sampling_disabled: "AI rewrites aren't available for this account.",
+    not_declared: "AI rewrites aren't available right now.",
+    capability_disabled: "AI rewrites aren't available in this view.",
+    capability_removed: "AI rewrites aren't available in this view.",
+    rate_limited: "You're sending requests quickly — wait a moment and try again.",
+    session_expired: "Please sign in again to use AI rewrites.",
+    refused: "Claude couldn't complete that rewrite — try again.",
+    empty_completion: "No rewrite came back — try shortening your resume text.",
+    invalid_json: "Something went wrong reading the rewrite. Try again.",
+    prompt_too_large: "Your resume or job description is too long for a rewrite — trim it and try again."
+  };
+  return map[code] || "Something went wrong. Try again.";
+}
+
+function buildRewritePrompt(resume, issues, jd){
+  let p = "You are an expert resume writer fixing specific problems an ATS-compatibility audit found.\n\n";
+  p += "RESUME TEXT:\n" + resume + "\n\n";
+  if(jd) p += "TARGET JOB DESCRIPTION:\n" + jd + "\n\n";
+  p += "ISSUES FROM THE AUDIT:\n" + issues.map(i => "- " + i).join("\n") + "\n\n";
+  p += "Pick the 4 to 8 weakest individual lines or bullets (prioritize ones tied to the issues above) and rewrite each: stronger action verb, quantified impact where the original plausibly implies a number, and natural job-description keywords if one was provided. Never invent employers, dates, titles, or credentials not implied by the original text. Also write one improved professional summary line (1-2 sentences).\n\n";
+  p += 'Reply with ONLY this JSON shape, no prose before or after: {"summaryLine": "...", "rewrites": [{"original": "...", "rewritten": "...", "reason": "..."}]}';
+  return p;
+}
+
+function renderRewrite(data){
+  const el = $('rewriteResults');
+  el.innerHTML = '';
+  if(data.summaryLine){
+    const s = document.createElement('div');
+    s.className = 'panel';
+    s.innerHTML = '<label>Suggested summary line</label><p style="margin:0;font-size:14px;">' + escapeHtml(data.summaryLine) + '</p>';
+    el.appendChild(s);
+  }
+  (data.rewrites || []).forEach(r=>{
+    const card = document.createElement('div');
+    card.className = 'rewrite-card';
+    card.innerHTML =
+      '<span class="rw-label">Before</span><div class="rw-before">' + escapeHtml(r.original||'') + '</div>' +
+      '<span class="rw-label">After</span><div class="rw-after">' + escapeHtml(r.rewritten||'') + '</div>' +
+      (r.reason ? '<p class="rw-reason">' + escapeHtml(r.reason) + '</p>' : '');
+    el.appendChild(card);
+  });
+}
+
+async function extractTextFromFile(file){
+  const ext = (file.name.split('.').pop() || '').toLowerCase();
+
+  if(ext === 'txt'){
+    return (await file.text()).trim();
+  }
+
+  if(ext === 'pdf'){
+    const pdfjsLib = window.pdfjsLib || window['pdfjs-dist/build/pdf'];
+    if(!pdfjsLib) throw new Error('PDF reader failed to load — try pasting the text instead.');
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const buf = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+    let text = '';
+    for(let i = 1; i <= pdf.numPages; i++){
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      text += content.items.map(it => it.str).join(' ') + '\n';
+    }
+    return text.trim();
+  }
+
+  if(ext === 'docx'){
+    if(!window.mammoth) throw new Error('Word reader failed to load — try pasting the text instead.');
+    const buf = await file.arrayBuffer();
+    const result = await window.mammoth.extractRawText({ arrayBuffer: buf });
+    return result.value.trim();
+  }
+
+  if(ext === 'doc'){
+    throw new Error(".doc isn't supported — save as .docx or paste the text instead.");
+  }
+
+  throw new Error('Unsupported file type — upload a .pdf, .docx or .txt file.');
+}
+
+function wireFileInput(inputId, textareaId, statusId){
+  const input = $(inputId);
+  input.addEventListener('change', async ()=>{
+    const file = input.files[0];
+    if(!file) return;
+    const status = $(statusId);
+    status.textContent = 'Reading ' + file.name + '...';
+    try{
+      const text = await extractTextFromFile(file);
+      if(!text) throw new Error('No text could be read from that file — try pasting it instead.');
+      $(textareaId).value = text;
+      const words = text.trim().split(/\s+/).filter(Boolean).length;
+      status.textContent = 'Loaded ' + file.name + ' (' + words + ' words)';
+    }catch(e){
+      status.textContent = e.message || 'Could not read that file — try pasting the text instead.';
+    }
+    input.value = '';
+  });
+}
+wireFileInput('resumeFile', 'resume', 'resumeFileStatus');
+wireFileInput('jdFile', 'jd', 'jdFileStatus');
+
+function extractKeywords(text, limit){
+  const freq = {};
+  const words = (text.toLowerCase().match(/[a-z][a-z0-9+.#-]{2,}/g) || []);
+  words.forEach(w=>{
+    if(STOPWORDS.has(w)) return;
+    freq[w] = (freq[w]||0)+1;
+  });
+  return Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,limit).map(e=>e[0]);
+}
+
+function wait(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+function animateScore(pct, color){
+  $('scoreArc').style.stroke = color;
+  const circumference = 264;
+  $('scoreArc').setAttribute('stroke-dashoffset', circumference - (circumference*pct/100));
+  const numEl = $('scoreNum');
+  const duration = 700;
+  const t0 = performance.now();
+  function step(now){
+    const t = Math.min(1, (now-t0)/duration);
+    numEl.textContent = Math.round(pct * (1 - Math.pow(1-t,2)));
+    if(t<1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+async function runAudit(){
+  const resume = $('resume').value.trim();
+  const jd = $('jd').value.trim();
+  if(!resume){
+    $('statusHint').textContent = 'Paste your resume text first.';
+    $('statusHint').style.color = 'var(--bad)';
+    return;
+  }
+  $('statusHint').style.color = '';
+  $('statusHint').textContent = 'Nothing leaves your browser — this runs entirely on your device.';
+
+  const runBtn = $('runBtn');
+  runBtn.disabled = true;
+  const runBtnLabel = runBtn.textContent;
+
+  $('structureIssues').innerHTML = '';
+  $('wordingIssues').innerHTML = '';
+  $('kwGrid').innerHTML = '';
+  $('rewriteResults').innerHTML = '';
+  $('rewriteStatus').textContent = '';
+  document.querySelectorAll('#keywordPanel p.hint:not(#kwHint)').forEach(e=>e.remove());
+  $('kwHint').textContent = 'Add a job description above to check keyword overlap.';
+  $('scoreNum').textContent = '0';
+  $('scoreArc').style.stroke = 'var(--line)';
+  $('scoreArc').setAttribute('stroke-dashoffset', 264);
+  $('scoreBand').textContent = '—';
+  $('scoreBand').style.color = '';
+  $('scoreSummary').textContent = '';
+
+  document.querySelectorAll('.stage-block').forEach(el=>el.classList.remove('show'));
+  $('report').style.display = 'block';
+  $('report').scrollIntoView({behavior:'smooth', block:'start'});
+
+  const status = $('auditStatus');
+  const structure = [];
+  const wording = [];
+  let points = 0, maxPoints = 0;
+  const lower = resume.toLowerCase();
+
+  runBtn.textContent = 'Analyzing...';
+  status.textContent = 'Checking contact info & structure...';
+  await wait(400);
+  $('stageStructure').classList.add('show');
+  await wait(300);
+
+  const email = /[\w.+-]+@[\w-]+\.[a-z]{2,}/i.test(resume);
+  const phone = /(\+?\d[\d\s().-]{7,}\d)/.test(resume);
+  maxPoints += 10;
+  if(email && phone){ structure.push(['good','Contact info detected','An email and phone number were both found in plain text — ATS systems can parse these.']); points+=10; }
+  else { structure.push(['bad','Contact info missing or unreadable','No clear email or phone number was found. Put these as plain text near the top, not inside a header/footer or image.']); }
+
+  const headings = ['experience','work history','employment','education','skills','summary','projects','certifications'];
+  const foundHeadings = headings.filter(h=>lower.includes(h));
+  maxPoints += 10;
+  if(foundHeadings.length>=2){ structure.push(['good','Standard section headings found','Detected common headings ('+foundHeadings.slice(0,4).join(', ')+'). ATS parsers rely on these to sort content correctly.']); points+=10; }
+  else { structure.push(['warn','Few standard section headings detected','Use conventional headings like "Experience", "Education" and "Skills" rather than creative labels — parsers look for these exact patterns.']); points+=4; }
+
+  const bulletLines = resume.split('\n').filter(l=>/^[\s]*[•\-*▪◦]/.test(l));
+  maxPoints += 10;
+  if(bulletLines.length>=3){ structure.push(['good','Bullet points detected','Achievements appear to be broken into scannable bullet points.']); points+=10; }
+  else { structure.push(['warn','Few or no bullet points found','Break achievements into short bullet points starting with an action verb — dense paragraphs are harder for both ATS and recruiters to scan.']); points+=3; }
+
+  const weirdChars = (resume.match(/[^\x00-\x7F]/g)||[]).filter(c=>!/[’‘“”—–]/.test(c));
+  maxPoints += 8;
+  if(weirdChars.length===0){ structure.push(['good','No unusual symbol characters','No decorative icons or special glyphs that some ATS parsers mis-read or drop.']); points+=8; }
+  else { structure.push(['warn','Unusual characters detected','Found '+weirdChars.length+' non-standard character(s), possibly icons or symbols. Some ATS systems render these as garbled text or blank boxes.']); points+=3; }
+
+  const tabCount = (resume.match(/\t/g)||[]).length;
+  maxPoints += 6;
+  if(tabCount < 5){ structure.push(['good','Layout looks linear','Text doesn\'t show heavy tab/column patterns, suggesting a single-column layout — the safest format for ATS.']); points+=6; }
+  else { structure.push(['warn','Possible multi-column layout','Frequent tab characters can indicate a multi-column or table layout, which many ATS parsers read out of order or scramble.']); points+=2; }
+
+  structure.forEach(([sev,title,desc], i)=>{
+    const el = document.createElement('div');
+    el.className='issue';
+    el.style.animationDelay = (i*90)+'ms';
+    el.innerHTML = `<span class="tag ${sev}">${sev==='good'?'Pass':sev==='warn'?'Check':'Fix'}</span><div class="body"><strong>${title}</strong><span>${desc}</span></div>`;
+    $('structureIssues').appendChild(el);
+  });
+  await wait(structure.length*90 + 300);
+
+  status.textContent = 'Matching keywords...';
+  await wait(350);
+  $('stageKeywords').classList.add('show');
+  await wait(250);
+  if(jd){
+    $('kwHint').textContent = 'Top terms from the job description, and whether they appear in your resume:';
+    const jdWords = extractKeywords(jd, 18);
+    let hits = 0;
+    jdWords.forEach((w,i)=>{
+      const present = lower.includes(w);
+      if(present) hits++;
+      const chip = document.createElement('span');
+      chip.className = 'kw ' + (present?'hit':'miss');
+      chip.style.animationDelay = (i*35)+'ms';
+      chip.textContent = w + (present?' ✓':' —');
+      $('kwGrid').appendChild(chip);
+    });
+    const kwScore = jdWords.length ? Math.round((hits/jdWords.length)*20) : 0;
+    points += kwScore; maxPoints += 20;
+    const kwNote = document.createElement('p');
+    kwNote.className='hint';
+    kwNote.style.marginTop='10px';
+    kwNote.textContent = hits+' of '+jdWords.length+' key terms from the job description appear in your resume.';
+    $('keywordPanel').appendChild(kwNote);
+    await wait(jdWords.length*35 + 250);
+  } else {
+    await wait(150);
+  }
+
+  status.textContent = 'Reviewing wording & readability...';
+  await wait(400);
+  $('stageWording').classList.add('show');
+  await wait(250);
+
+  const pronounMatches = (resume.match(/\b(I|me|my)\b/gi)||[]).length;
+  maxPoints += 6;
+  if(pronounMatches<=2){ wording.push(['good','Minimal first-person language','Resume mostly avoids "I/me/my", which is the expected convention.']); points+=6; }
+  else { wording.push(['warn','First-person pronouns used often','Found "I/me/my" '+pronounMatches+' times. Convention is to drop pronouns: "Led a team of 5" rather than "I led a team of 5".']); points+=2; }
+
+  const verbStarts = ['led','built','managed','created','designed','launched','improved','increased','reduced','developed','implemented','analyzed','coordinated','delivered','drove','owned','negotiated','scaled'];
+  const bulletsStartingWithVerb = bulletLines.filter(l=>{
+    const clean = l.replace(/^[\s]*[•\-*▪◦]\s*/,'').split(' ')[0]?.toLowerCase().replace(/[^a-z]/g,'');
+    return verbStarts.includes(clean);
+  });
+  maxPoints += 8;
+  if(bulletLines.length>0 && bulletsStartingWithVerb.length/bulletLines.length > 0.4){ wording.push(['good','Bullets lead with action verbs','Most bullets start with a strong action verb ("Led", "Built", "Reduced") rather than a passive description.']); points+=8; }
+  else if(bulletLines.length>0){ wording.push(['warn','Bullets could start stronger','Try opening more bullets with a concrete action verb instead of a noun or "Responsible for".']); points+=3; }
+
+  const numberMatches = (resume.match(/\d+%|\$\d|\d+x|\b\d{2,}\b/g)||[]).length;
+  maxPoints += 8;
+  if(numberMatches>=3){ wording.push(['good','Includes quantified results','Numbers, percentages or dollar figures appear multiple times — this is what recruiters scan for once past the ATS.']); points+=8; }
+  else { wording.push(['warn','Few quantified results','Add numbers where possible ("reduced costs 18%", "managed team of 6") — unquantified bullets are easy to skim past.']); points+=2; }
+
+  wording.forEach(([sev,title,desc], i)=>{
+    const el = document.createElement('div');
+    el.className='issue';
+    el.style.animationDelay = (i*90)+'ms';
+    el.innerHTML = `<span class="tag ${sev}">${sev==='good'?'Pass':sev==='warn'?'Check':'Fix'}</span><div class="body"><strong>${title}</strong><span>${desc}</span></div>`;
+    $('wordingIssues').appendChild(el);
+  });
+  await wait(wording.length*90 + 300);
+
+  lastAuditResume = resume;
+  lastAuditJD = jd;
+  lastAuditIssues = structure.concat(wording)
+    .filter(i => i[0] !== 'good')
+    .map(i => i[1] + ' — ' + i[2]);
+
+  status.textContent = 'Calculating your score...';
+  await wait(350);
+
+  const pct = Math.max(4, Math.round((points/maxPoints)*100));
+  let band, color, summary;
+  if(pct>=80){ band='Strong'; color='var(--good)'; summary='Your resume is in good shape for ATS parsing. Focus remaining effort on tailoring keywords per application.'; }
+  else if(pct>=55){ band='Needs work'; color='var(--warn)'; summary='Parseable, but several fixable issues below are likely costing you visibility.'; }
+  else { band='At risk'; color='var(--bad)'; summary='Several structural issues below may be causing ATS systems to misread or drop parts of your resume.'; }
+  animateScore(pct, color);
+  $('scoreBand').textContent = band;
+  $('scoreBand').style.color = color;
+  $('scoreSummary').textContent = summary;
+  await wait(550);
+  $('stageUpsell').classList.add('show');
+  await wait(300);
+  $('stageActions').classList.add('show');
+  status.textContent = '';
+  runBtn.textContent = runBtnLabel;
+  runBtn.disabled = false;
+}
+
+$('runBtn').addEventListener('click', runAudit);
+$('resetBtn').addEventListener('click', ()=>{
+  $('report').style.display='none';
+  document.querySelectorAll('.stage-block').forEach(el=>el.classList.remove('show'));
+  $('structureIssues').innerHTML='';
+  $('wordingIssues').innerHTML='';
+  $('kwGrid').innerHTML='';
+  $('rewriteResults').innerHTML='';
+  $('rewriteStatus').textContent='';
+  $('auditStatus').textContent='';
+  const extra = document.querySelectorAll('#keywordPanel p.hint:not(#kwHint)');
+  extra.forEach(e=>e.remove());
+  $('kwHint').textContent='Add a job description above to check keyword overlap.';
+  window.scrollTo({top:0,behavior:'smooth'});
+});
+$('downloadBtn').addEventListener('click', ()=>window.print());
+
+$('rewriteBtn').addEventListener('click', async ()=>{
+  if(!sample){
+    $('rewriteStatus').textContent = "AI rewrites aren't available in this view.";
+    return;
+  }
+  if(!lastAuditResume){
+    $('rewriteStatus').textContent = 'Run the audit above first.';
+    return;
+  }
+  const btn = $('rewriteBtn');
+  btn.disabled = true;
+  $('rewriteStatus').textContent = 'Thinking...';
+  $('rewriteResults').innerHTML = '';
+  try{
+    const data = await sample.json(buildRewritePrompt(lastAuditResume, lastAuditIssues, lastAuditJD), {modelTier:'default'});
+    $('rewriteStatus').textContent = '';
+    renderRewrite(data);
+  }catch(e){
+    $('rewriteStatus').textContent = copyForCode(e.code);
+  }finally{
+    btn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
